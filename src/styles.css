@@ -1,0 +1,104 @@
+@font-face {
+    font-family: comic-neue;
+    src: url(/assets/ComicNeue-Regular.ttf);
+}
+
+#main-screen,
+#edit-screen {
+    display: none;
+}
+
+#connection-table,
+#edit-table {
+    color: white;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+
+    font-family: comic-neue;
+}
+
+.container {
+    width: 350px;
+    height: 400px;
+    background-color: #28282b;
+    overflow-y: scroll;
+}
+
+.row {
+    border-top: 2px solid #3b3b40;
+    border-bottom: 2px solid #3b3b40;
+
+    height: 40px;
+    background-color: #5f5f67;
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.title {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 10px;
+}
+
+.title.px22 {
+    font-size: 22px;
+}
+
+.title.px18 {
+    font-size: 18px;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 10px;
+}
+
+.actions > button {
+    background-color: transparent;
+
+    border: none;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.actions > input[type="text"] {
+    width: 200px;
+    height: 20px;
+    outline: none;
+    color: white;
+    background-color: transparent;
+
+    border: 1px solid black;
+    border-bottom: 2px solid black;
+}
+
+.actions > input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.small-svg {
+    width: 15px;
+    height: 20px;
+}
+
+.medium-svg {
+    width: 20px;
+    height: 20px;
+}
+
+.large-svg {
+    width: 25px;
+    height: 20px;
+}

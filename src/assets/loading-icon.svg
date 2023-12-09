@@ -1,0 +1,10 @@
+<svg viewBox="69.6 77.2 250 250" xmlns="http://www.w3.org/2000/svg">
+    <g transform="translate(-13.7 -6.1) scale(.83333)">
+        <circle
+            style="fill:#d8d8d8;stroke:#fe0;fill-opacity:0;stroke-width:36px;transform-box:fill-box;transform-origin:50% 50%;stroke-dasharray:52"
+            cx="250" cy="250" fill="none" r="132">
+            <animateTransform type="rotate" additive="sum" attributeName="transform" values="0;180" dur="1s"
+                fill="freeze" keyTimes="0; 1" repeatCount="indefinite" />
+        </circle>
+    </g>
+</svg>

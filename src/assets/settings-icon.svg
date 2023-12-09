@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="100 100 300 300">
+    <path d="M100 225h300v50H100z" style="fill:#232d73;stroke:#232d73" />
+    <path d="M87.6 302.2h300v50h-300z" style="fill:#232d73;stroke:#232d73;transform-origin:237.589px 327.236px"
+        transform="rotate(-90 -32.4 -44.8)" />
+    <path d="M162 316h300v50H162z" style="fill:#232d73;stroke:#232d73;transform-origin:312.014px 341.024px"
+        transform="rotate(45 78.9 -120.4)" />
+    <path d="M162 316h300v50H162z" style="fill:#232d73;stroke:#232d73;transform-origin:312.014px 341.024px"
+        transform="rotate(135 -12.2 -58.4)" />
+    <circle cx="250" cy="250" r="87.5" style="fill:#232d73;stroke:#232d73" />
+</svg>
