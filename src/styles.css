@@ -4,13 +4,35 @@
 }
 
 #main-screen,
-#edit-screen {
+#edit-screen,
+#loading-screen,
+#connected-screen {
     display: none;
 }
 
 #connection-table,
-#edit-table {
+#edit-table,
+#connected-screen {
     color: white;
+}
+
+#loading-wrapper {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#connected-wrapper {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 body {
@@ -43,6 +65,10 @@ body {
     align-items: center;
     justify-content: flex-start;
     padding-left: 10px;
+}
+
+.title.px32 {
+    font-size: 32px;
 }
 
 .title.px22 {
@@ -88,6 +114,18 @@ body {
     cursor: pointer;
 }
 
+.connected-screen-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    font-size: 18px;
+    cursor: pointer;
+    background-color: transparent;
+    border: none;
+    color: white;
+}
+
 .small-svg {
     width: 15px;
     height: 20px;
@@ -101,4 +139,14 @@ body {
 .large-svg {
     width: 25px;
     height: 20px;
+}
+
+.huge-svg {
+    width: 200px;
+    height: 200px;
+}
+
+.max-svg {
+    width: 100%;
+    height: 100%;
 }

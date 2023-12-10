@@ -8,6 +8,8 @@
         <script type="module" src="/main.js" defer></script>
     </head>
     <body>
+        <div id="text"></div>
+
         <div id="main-screen">
             <div class="container">
                 <div id="connection-table"></div>
@@ -22,6 +24,27 @@
                             <input type="text" />
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        <div id="loading-screen">
+            <div class="container">
+                <div id="loading-wrapper">
+                    <img class="huge-svg" src="/assets/loading-icon.svg" />
+                </div>
+            </div>
+        </div>
+        <div id="connected-screen">
+            <div class="container">
+                <div id="connected-wrapper">
+                    <div class="title px18">Server running on</div>
+                    <div class="title px32" id="connected-screen-server">localhost:1233</div>
+                    <br />
+                    <br />
+                    <button class="connected-screen-btn" onclick="closeCurrentConnections()">
+                        <img class="medium-svg" src="/assets/stop-icon.svg" />
+                        Close Server
+                    </button>
                 </div>
             </div>
         </div>

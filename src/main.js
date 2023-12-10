@@ -1,14 +1,26 @@
 const { invoke } = window.__TAURI__.tauri;
 const { message } = window.__TAURI__.dialog;
+const { appDataDir } = window.__TAURI__.path;
+const { arch, platform } = window.__TAURI__.os;
+const { writeBinaryFile, createDir, exists } = window.__TAURI__.fs;
+const { getClient, ResponseType } = window.__TAURI__.http;
 
 const screens = {
     0: "main-screen",
     1: "edit-screen",
+    2: "loading-screen",
+    3: "connected-screen",
 };
+
+const links = [
+    { platform: "win32", arch: "x86_64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-386.exe", postfix: ".exe" },
+    { platform: "win32", arch: "aarch64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe", postfix: ".exe" },
+];
 
 let currentScreenIndex = 0;
 let servers = [{ name: "Miles' Server", ip: "play.mimja156.com" }];
 let isInDeleteMode = false;
+let cloudflaredPath;
 
 function setScreen(newScreen) {
     let newScreenIndex = newScreen;
@@ -30,6 +42,27 @@ function setScreen(newScreen) {
 
     currentScreenIndex = newScreenIndex;
 }
+
+//--
+
+function beginConnectionOnIndex(serverIndex) {
+    setScreen("loading-screen");
+    let selectedServer = servers[serverIndex];
+    let localHostPort = Math.floor(25565 + Math.random() * 2000);
+
+    invoke("run_command", { command: `${cloudflaredPath}`, args: `access tcp --hostname ${selectedServer.ip} --url localhost:${localHostPort}` });
+
+    setScreen("connected-screen");
+    document.getElementById("connected-screen-server").innerHTML = `localhost:${localHostPort}`;
+}
+
+function closeCurrentConnections() {
+    invoke("stop_current_command");
+    setScreen("main-screen");
+    renderServerTable();
+}
+
+//--
 
 function renderServerTable() {
     let serverTable = document.getElementById("connection-table");
@@ -72,7 +105,7 @@ function renderServerTable() {
                 ${
                     isInDeleteMode == false
                         ? `
-                <button>
+                <button onclick="beginConnectionOnIndex(${count})">
                     <img class="medium-svg" src="/assets/play-icon.svg" />
                 </button>
                 <button onclick="enterSettingsOnIndex(${count})">
@@ -224,9 +257,11 @@ function showEditScreen() {
     renderEditTable();
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
     window.showMainScreen = showMainScreen;
     window.showEditScreen = showEditScreen;
+
+    window.beginConnectionOnIndex = beginConnectionOnIndex;
 
     window.enterSettingsOnIndex = enterSettingsOnIndex;
     window.toggleRemoveServers = toggleRemoveServers;
@@ -235,6 +270,37 @@ window.addEventListener("DOMContentLoaded", () => {
     window.renderEditTable = renderEditTable;
     window.checkAndSaveNewServer = checkAndSaveNewServer;
     window.checkAndSaveExistingServer = checkAndSaveExistingServer;
+
+    window.closeCurrentConnections = closeCurrentConnections;
+
+    //--
+
+    setScreen("loading-screen");
+
+    const appDataDirPath = await appDataDir();
+    const currentPlatform = await platform();
+    const currentArch = await arch();
+
+    let currentLinkSet;
+    for (const iterator of links) {
+        if (iterator.arch === currentArch && iterator.platform === currentPlatform) {
+            currentLinkSet = iterator;
+            break;
+        }
+    }
+
+    if (!(await exists(appDataDirPath))) await createDir(appDataDirPath, { recursive: true });
+    if (!(await exists(appDataDirPath + currentArch + currentLinkSet.postfix))) {
+        const client = await getClient();
+        const data = (
+            await client.get(currentLinkSet.link, {
+                responseType: ResponseType.Binary,
+            })
+        ).data;
+        await writeBinaryFile(appDataDirPath + currentArch + currentLinkSet.postfix, data);
+    }
+
+    cloudflaredPath = appDataDirPath + currentArch + currentLinkSet.postfix;
 
     setScreen("main-screen");
     renderServerTable();
