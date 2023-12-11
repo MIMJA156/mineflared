@@ -1,34 +1,30 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::process::Command;
-use std::thread::{self, JoinHandle};
+use std::process::{Child, Command};
 
-static mut CURRENT_CLOUDFLARED_THREAD: Option<JoinHandle<()>> = None;
-static mut THREAD_IS_ALLOWED: bool = false;
+static mut GLB_CHILD_VEC: Vec<Child> = Vec::new();
 
 #[tauri::command]
 fn run_command(command: String, args: String) {
-    println!("{}", command);
+    println!("{} {}", command, args);
+
+    let mut command = Command::new(command);
+    command.args(args.split(" "));
+    let child_process = command.spawn().expect("process failed to execute");
 
     unsafe {
-        THREAD_IS_ALLOWED = true;
-        CURRENT_CLOUDFLARED_THREAD = Some(thread::spawn(move || {
-            let mut command = Command::new(command);
-            command.args(args.split(" "));
-            let mut child_process = command.spawn().expect("process failed to execute");
-
-            while THREAD_IS_ALLOWED == true {}
-            _ = child_process.kill();
-            _ = child_process.wait();
-        }));
-    };
+        GLB_CHILD_VEC.push(child_process);
+    }
 }
 
 #[tauri::command]
 fn stop_current_command() {
     unsafe {
-        THREAD_IS_ALLOWED = false;
+        for child in GLB_CHILD_VEC.iter_mut() {
+            child.kill().expect("Failed to kill child process");
+            child.wait().expect("Failed to wait for child process");
+        }
     }
 }
 

@@ -4,6 +4,7 @@ const { appDataDir } = window.__TAURI__.path;
 const { arch, platform } = window.__TAURI__.os;
 const { writeBinaryFile, createDir, exists } = window.__TAURI__.fs;
 const { getClient, ResponseType } = window.__TAURI__.http;
+const { exit } = window.__TAURI__.process;
 
 const screens = {
     0: "main-screen",
@@ -287,6 +288,11 @@ window.addEventListener("DOMContentLoaded", async () => {
             currentLinkSet = iterator;
             break;
         }
+    }
+
+    if (currentLinkSet == null) {
+        await message("unsupported device.", { type: "error" });
+        await exit(1);
     }
 
     if (!(await exists(appDataDirPath))) await createDir(appDataDirPath, { recursive: true });
