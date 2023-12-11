@@ -6,13 +6,15 @@
 #main-screen,
 #edit-screen,
 #loading-screen,
-#connected-screen {
+#connected-screen,
+#un-supported-device {
     display: none;
 }
 
 #connection-table,
 #edit-table,
-#connected-screen {
+#connected-screen,
+#un-supported-device {
     color: white;
 }
 

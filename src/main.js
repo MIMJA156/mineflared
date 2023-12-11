@@ -10,6 +10,7 @@ const screens = {
     1: "edit-screen",
     2: "loading-screen",
     3: "connected-screen",
+    4: "un-supported-device",
 };
 
 const links = [
@@ -287,6 +288,11 @@ window.addEventListener("DOMContentLoaded", async () => {
             currentLinkSet = iterator;
             break;
         }
+    }
+
+    if (currentLinkSet == null) {
+        setScreen("un-supported-device");
+        await exit(1);
     }
 
     if (!(await exists(appDataDirPath))) await createDir(appDataDirPath, { recursive: true });
