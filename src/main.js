@@ -4,6 +4,7 @@ const { appDataDir } = window.__TAURI__.path;
 const { arch, platform } = window.__TAURI__.os;
 const { writeBinaryFile, createDir, exists } = window.__TAURI__.fs;
 const { getClient, ResponseType } = window.__TAURI__.http;
+const { exit } = window.__TAURI__.process;
 
 const screens = {
     0: "main-screen",
@@ -46,12 +47,12 @@ function setScreen(newScreen) {
 
 //--
 
-function beginConnectionOnIndex(serverIndex) {
+async function beginConnectionOnIndex(serverIndex) {
     setScreen("loading-screen");
     let selectedServer = servers[serverIndex];
     let localHostPort = Math.floor(25565 + Math.random() * 2000);
 
-    invoke("run_command", { command: `${cloudflaredPath}`, args: `access tcp --hostname ${selectedServer.ip} --url localhost:${localHostPort}` });
+    await invoke("run_command", { command: `${cloudflaredPath}`, args: `access tcp --hostname ${selectedServer.ip} --url localhost:${localHostPort}` });
 
     setScreen("connected-screen");
     document.getElementById("connected-screen-server").innerHTML = `localhost:${localHostPort}`;
