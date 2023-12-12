@@ -20,7 +20,7 @@ const links = [
 ];
 
 let currentScreenIndex = 0;
-let servers = [{ name: "Miles' Server", ip: "play.mimja156.com" }];
+let servers = [];
 let isInDeleteMode = false;
 let cloudflaredPath;
 
