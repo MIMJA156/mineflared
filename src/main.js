@@ -46,12 +46,12 @@ function setScreen(newScreen) {
 
 //--
 
-function beginConnectionOnIndex(serverIndex) {
+async function beginConnectionOnIndex(serverIndex) {
     setScreen("loading-screen");
     let selectedServer = servers[serverIndex];
     let localHostPort = Math.floor(25565 + Math.random() * 2000);
 
-    invoke("run_command", { command: `${cloudflaredPath}`, args: `access tcp --hostname ${selectedServer.ip} --url localhost:${localHostPort}` });
+    await invoke("run_command", { command: `${cloudflaredPath}`, args: `access tcp --hostname ${selectedServer.ip} --url localhost:${localHostPort}` });
 
     setScreen("connected-screen");
     document.getElementById("connected-screen-server").innerHTML = `localhost:${localHostPort}`;
