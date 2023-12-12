@@ -11,6 +11,7 @@ const screens = {
     1: "edit-screen",
     2: "loading-screen",
     3: "connected-screen",
+    4: "un-supported-device",
 };
 
 const links = [
@@ -291,7 +292,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (currentLinkSet == null) {
-        await message("unsupported device.", { type: "error" });
+        setScreen("un-supported-device");
         await exit(1);
     }
 
