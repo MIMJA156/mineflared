@@ -1,7 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::process::{Child, Command};
+use std::{
+    os::windows::process::CommandExt,
+    process::{Child, Command},
+};
 
 static mut GLB_CHILD_VEC: Vec<Child> = Vec::new();
 
@@ -11,6 +14,7 @@ fn run_command(command: String, args: String) {
 
     let mut command_process = Command::new(command);
     command_process.args(args.split(" "));
+    command_process.creation_flags(0x08000000);
     let child_process = command_process.spawn().expect("process failed to execute");
 
     unsafe {
