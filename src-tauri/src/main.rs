@@ -9,9 +9,9 @@ static mut GLB_CHILD_VEC: Vec<Child> = Vec::new();
 fn run_command(command: String, args: String) {
     println!("{} {}", command, args);
 
-    let mut command = Command::new(command);
-    command.args(args.split(" "));
-    let child_process = command.spawn().expect("process failed to execute");
+    let mut command_process = Command::new(command);
+    command_process.args(args.split(" "));
+    let child_process = command_process.spawn().expect("process failed to execute");
 
     unsafe {
         GLB_CHILD_VEC.push(child_process);
