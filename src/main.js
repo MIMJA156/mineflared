@@ -1,10 +1,11 @@
-const { invoke } = window.__TAURI__.tauri;
+const { invoke } = window.__TAURI__.core;
 const { message } = window.__TAURI__.dialog;
 const { appDataDir } = window.__TAURI__.path;
 const { arch, platform } = window.__TAURI__.os;
-const { writeBinaryFile, createDir, exists } = window.__TAURI__.fs;
-const { getClient, ResponseType } = window.__TAURI__.http;
+const { open, write, exists, mkdir, BaseDirectory } = window.__TAURI__.fs;
+const { fetch } = window.__TAURI__.http;
 const { exit } = window.__TAURI__.process;
+const path = window.__TAURI__.path;
 
 const screens = {
     0: "main-screen",
@@ -15,8 +16,8 @@ const screens = {
 };
 
 const links = [
-    { platform: "win32", arch: "x86_64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-386.exe", postfix: ".exe" },
-    { platform: "win32", arch: "aarch64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe", postfix: ".exe" },
+    { platform: "windows", arch: "x86_64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-386.exe", postfix: ".exe" },
+    { platform: "windows", arch: "aarch64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe", postfix: ".exe" },
 ];
 
 let currentScreenIndex = 0;
@@ -259,6 +260,8 @@ function showEditScreen() {
     renderEditTable();
 }
 
+//--
+
 window.addEventListener("DOMContentLoaded", async () => {
     window.showMainScreen = showMainScreen;
     window.showEditScreen = showEditScreen;
@@ -279,7 +282,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     setScreen("loading-screen");
 
-    const appDataDirPath = await appDataDir();
     const currentPlatform = await platform();
     const currentArch = await arch();
 
@@ -293,21 +295,30 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     if (currentLinkSet == null) {
         setScreen("un-supported-device");
-        await exit(1);
+        exit(1);
     }
 
-    if (!(await exists(appDataDirPath))) await createDir(appDataDirPath, { recursive: true });
-    if (!(await exists(appDataDirPath + currentArch + currentLinkSet.postfix))) {
-        const client = await getClient();
-        const data = (
-            await client.get(currentLinkSet.link, {
-                responseType: ResponseType.Binary,
-            })
-        ).data;
-        await writeBinaryFile(appDataDirPath + currentArch + currentLinkSet.postfix, data);
+    const fullBinaryFileName = currentArch + currentLinkSet.postfix;
+
+    const appDataPath = await path.appDataDir();
+    if (!(await exists(appDataPath))) await mkdir(appDataPath);
+    if (!(await exists(fullBinaryFileName, { baseDir: BaseDirectory.AppData }))) {
+        const response = await fetch(currentLinkSet.link, { method: 'GET' })
+        const blob = await response.blob()
+        const data = await blob.arrayBuffer()
+
+        const chunkSize = 100000;
+        const view = new Uint8Array(data);
+    
+        const file = await open(fullBinaryFileName, { write: true, create: true, baseDir: BaseDirectory.AppData });
+        for (let i = 0; i < data.byteLength; i += chunkSize) {
+            const slice = view.slice(i, i + chunkSize);
+            await file.write(slice.buffer);
+        }
+        await file.close();
     }
 
-    cloudflaredPath = appDataDirPath + currentArch + currentLinkSet.postfix;
+    cloudflaredPath = await path.join(appDataPath, fullBinaryFileName);
 
     setScreen("main-screen");
     renderServerTable();

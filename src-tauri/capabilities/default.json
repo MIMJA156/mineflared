@@ -1,0 +1,29 @@
+{
+    "identifier": "main-capabilities",
+    "windows": [
+        "main"
+    ],
+    "permissions": [
+        "core:default",
+        "fs:read-files",
+        "fs:write-files",
+        "fs:allow-mkdir",
+        "fs:allow-exists",
+        {
+            "identifier": "fs:scope",
+            "allow": [
+                "$DATA/**"
+            ]
+        },
+        {
+            "identifier": "http:default",
+            "allow": [
+                {
+                    "url": "https://**/*"
+                }
+            ]
+        },
+        "http:allow-fetch",
+        "dialog:allow-message"
+    ]
+}
