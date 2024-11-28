@@ -5,6 +5,9 @@ const { arch, platform } = window.__TAURI__.os;
 const { open, write, exists, mkdir, BaseDirectory } = window.__TAURI__.fs;
 const { fetch } = window.__TAURI__.http;
 const { exit } = window.__TAURI__.process;
+const { Command } = window.__TAURI__.shell;
+const { getCurrentWindow } = window.__TAURI__.window;
+const { listen } = window.__TAURI__.event;
 const path = window.__TAURI__.path;
 
 const screens = {
@@ -24,6 +27,7 @@ let currentScreenIndex = 0;
 let servers = [];
 let isInDeleteMode = false;
 let cloudflaredPath;
+let cloudflaredProcess;
 
 function setScreen(newScreen) {
     let newScreenIndex = newScreen;
@@ -48,19 +52,60 @@ function setScreen(newScreen) {
 
 //--
 
+async function checkAndKillProcess(processName) {
+    let findCommand, killCommand;
+
+    if (await platform() === "windows") {
+        findCommand = ['cmd', ['/c', `tasklist | findstr ${processName}`]];
+        killCommand = ['cmd', ['/c', `taskkill /IM ${processName} /F`]];
+    } else {
+        findCommand = ['sh', ['-c', `pgrep -f ${processName}`]];
+        killCommand = ['sh', ['-c', `pkill -f ${processName}`]];
+    }
+
+    const findProcess = Command.create(...findCommand);
+    const findOutput = await findProcess.execute();
+
+    if (findOutput.stdout.trim()) {
+        console.log(`Process found: ${findOutput.stdout}`);
+
+        const killProcess = Command.create(...killCommand);
+        const killOutput = await killProcess.execute();
+
+        if (killOutput.code === 0) {
+            console.log(`Successfully killed process: ${processName}`);
+        } else {
+            console.error(`Failed to kill process: ${killOutput.stderr}`);
+        }
+    }
+}
+
+//--
+
 async function beginConnectionOnIndex(serverIndex) {
     setScreen("loading-screen");
     let selectedServer = servers[serverIndex];
     let localHostPort = Math.floor(25565 + Math.random() * 2000);
 
-    await invoke("run_command", { command: `${cloudflaredPath}`, args: `access tcp --hostname ${selectedServer.ip} --url localhost:${localHostPort}` });
+    let command = await Command.create(`cloudflared`, ["access", "tcp", "--hostname", selectedServer.ip, "--url", `localhost:${localHostPort}`]);
+    command.on('error', error => console.error(error));
+    command.stdout.on('data', line => console.log(line));
+    command.stderr.on('data', line => console.log(line));
+
+    const child = await command.spawn();
+    cloudflaredProcess = child;
 
     setScreen("connected-screen");
     document.getElementById("connected-screen-server").innerHTML = `localhost:${localHostPort}`;
 }
 
-function closeCurrentConnections() {
-    invoke("stop_current_command");
+async function closeCurrentConnections() {
+    if(cloudflaredProcess != null) {
+        await cloudflaredProcess.kill();
+    } else {
+        await checkAndKillProcess("cloudflared.exe");
+    }
+
     setScreen("main-screen");
     renderServerTable();
 }
@@ -76,9 +121,8 @@ function renderServerTable() {
     <div class="row">
         <div class="title px22">Servers</div>
         <div class="actions">
-            ${
-                isInDeleteMode == false
-                    ? `
+            ${isInDeleteMode == false
+            ? `
             <button onclick="showEditScreen()">
                 <img class="medium-svg" src="/assets/add-icon.svg" />
             </button>
@@ -86,7 +130,7 @@ function renderServerTable() {
                 <img class="medium-svg" src="/assets/minus-icon.svg" />
             </button>
             `
-                    : `
+            : `
             <button onclick="removeAllSelectedServers()">
                 <img class="large-svg" src="/assets/check-icon.svg" />
             </button>
@@ -94,7 +138,7 @@ function renderServerTable() {
                 <img class="medium-svg" src="/assets/close-icon.svg" />
             </button>
             `
-            }
+        }
         </div>
     </div>
     `;
@@ -105,9 +149,8 @@ function renderServerTable() {
         <div class="row">
             <div class="title px18">${server.name}</div>
             <div class="actions">
-                ${
-                    isInDeleteMode == false
-                        ? `
+                ${isInDeleteMode == false
+                ? `
                 <button onclick="beginConnectionOnIndex(${count})">
                     <img class="medium-svg" src="/assets/play-icon.svg" />
                 </button>
@@ -115,8 +158,8 @@ function renderServerTable() {
                     <img class="medium-svg" src="/assets/settings-icon.svg" />
                 </button>
                 `
-                        : `<input type="checkbox" />`
-                }
+                : `<input type="checkbox" />`
+            }
             </div>
         </div>
         `;
@@ -278,6 +321,10 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     window.closeCurrentConnections = closeCurrentConnections;
 
+    await listen("tauri://destroyed", async () => {
+        await cloudflaredProcess.kill();
+    });
+
     //--
 
     setScreen("loading-screen");
@@ -298,7 +345,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         exit(1);
     }
 
-    const fullBinaryFileName = currentArch + currentLinkSet.postfix;
+    const fullBinaryFileName = "cloudflared" + currentLinkSet.postfix;
 
     const appDataPath = await path.appDataDir();
     if (!(await exists(appDataPath))) await mkdir(appDataPath);
@@ -309,7 +356,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
         const chunkSize = 100000;
         const view = new Uint8Array(data);
-    
+
         const file = await open(fullBinaryFileName, { write: true, create: true, baseDir: BaseDirectory.AppData });
         for (let i = 0; i < data.byteLength; i += chunkSize) {
             const slice = view.slice(i, i + chunkSize);
@@ -319,6 +366,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     cloudflaredPath = await path.join(appDataPath, fullBinaryFileName);
+    await checkAndKillProcess(fullBinaryFileName);
 
     setScreen("main-screen");
     renderServerTable();
