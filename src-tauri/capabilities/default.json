@@ -35,7 +35,7 @@
       "allow": [
         {
           "name": "cloudflared",
-          "cmd": "$APPDATA/cloudflared.exe",
+          "cmd": "$APPDATA/cloudflared.mineflared.exe",
           "args": [
             "access",
             "tcp",

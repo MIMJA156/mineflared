@@ -1,21 +1,23 @@
-const { invoke } = window.__TAURI__.core;
-const { message } = window.__TAURI__.dialog;
-const { appDataDir } = window.__TAURI__.path;
+const { open, write, rename, remove, exists, mkdir, BaseDirectory } = window.__TAURI__.fs;
 const { arch, platform } = window.__TAURI__.os;
-const { open, write, exists, mkdir, BaseDirectory } = window.__TAURI__.fs;
-const { fetch } = window.__TAURI__.http;
-const { exit } = window.__TAURI__.process;
+const { appDataDir } = window.__TAURI__.path;
+const { message } = window.__TAURI__.dialog;
 const { Command } = window.__TAURI__.shell;
-const { getCurrentWindow } = window.__TAURI__.window;
 const { listen } = window.__TAURI__.event;
+const { exit } = window.__TAURI__.process;
+const { invoke } = window.__TAURI__.core;
+const { fetch } = window.__TAURI__.http;
 const path = window.__TAURI__.path;
+
+const delay = ms => new Promise(res => setTimeout(res, ms));
 
 const screens = {
     0: "main-screen",
     1: "edit-screen",
     2: "loading-screen",
-    3: "connected-screen",
-    4: "un-supported-device",
+    3: "logging-screen",
+    4: "connected-screen",
+    5: "un-supported-device",
 };
 
 const links = [
@@ -78,6 +80,44 @@ async function closeCurrentConnections() {
 
     setScreen("main-screen");
     renderServerTable();
+}
+
+//--
+
+let logs = [];
+
+function renderLoggingView() {
+    let loggingView = document.getElementById("logging-view")
+
+    loggingView.innerHTML = "";
+
+    for (const log of logs) {
+        loggingView.innerHTML += `
+        <div>${log}</div>
+        `;
+    }
+
+    loggingView.scrollTop = loggingView.scrollHeight;
+}
+
+function LoggingViewReset() {
+    logs = [];
+    renderLoggingView();
+}
+
+function LoggingViewAdd(log) {
+    logs.push(log);
+    renderLoggingView();
+}
+
+function LoggingViewInsert(log, index = 0) {
+    logs.splice(logs.length - index, 0, log);
+    renderLoggingView();
+}
+
+function LoggingViewReplace(log, index = 0) {
+    logs[(logs.length - 1) - index] = log
+    renderLoggingView();
 }
 
 //--
@@ -297,7 +337,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     //--
 
-    setScreen("loading-screen");
+    setScreen("logging-screen");
 
     const currentPlatform = await platform();
     const currentArch = await arch();
@@ -315,28 +355,51 @@ window.addEventListener("DOMContentLoaded", async () => {
         exit(1);
     }
 
-    const fullBinaryFileName = "cloudflared" + currentLinkSet.postfix;
+    const fullBinaryFileName = "cloudflared.mineflared" + currentLinkSet.postfix;
+    const fullBinaryFileNameTmp = fullBinaryFileName + ".tmp"
 
     const appDataPath = await path.appDataDir();
     if (!(await exists(appDataPath))) await mkdir(appDataPath);
     if (!(await exists(fullBinaryFileName, { baseDir: BaseDirectory.AppData }))) {
-        const response = await fetch(currentLinkSet.link, { method: 'GET' })
-        const blob = await response.blob()
-        const data = await blob.arrayBuffer()
+
+        if(await exists(fullBinaryFileNameTmp, { baseDir: BaseDirectory.AppData }))
+            await remove(fullBinaryFileNameTmp, { baseDir: BaseDirectory.AppData });
+
+        LoggingViewReset();
+        LoggingViewAdd("downloading cloudflared . . .");
+
+        const response = await fetch(currentLinkSet.link, { method: 'GET' });
+        const blob = await response.blob();
+        const data = await blob.arrayBuffer();
 
         const chunkSize = 100000;
         const view = new Uint8Array(data);
 
-        const file = await open(fullBinaryFileName, { write: true, create: true, baseDir: BaseDirectory.AppData });
+        let loops = 0;
+        const maxLoops = Math.ceil(data.byteLength / chunkSize);
+        LoggingViewAdd("installing cloudflared . . . ");
+
+        const file = await open(fullBinaryFileNameTmp, { write: true, create: true, baseDir: BaseDirectory.AppData });
         for (let i = 0; i < data.byteLength; i += chunkSize) {
             const slice = view.slice(i, i + chunkSize);
             await file.write(slice.buffer);
+
+            LoggingViewReplace(`installing cloudflared . . . ${Math.round(100 * (loops / maxLoops))}%`, 0);
+            loops += 1;
         }
         await file.close();
+
+        await rename(
+            fullBinaryFileNameTmp,
+            fullBinaryFileName,
+            { oldPathBaseDir: BaseDirectory.AppData, newPathBaseDir: BaseDirectory.AppData }
+        );
     }
 
     cloudflaredPath = await path.join(appDataPath, fullBinaryFileName);
-    await invoke("kill_process", { "processName": "cloudflared.exe" });
+
+    LoggingViewAdd("cleaning old processes . . .");
+    await invoke("kill_process", { "processName": fullBinaryFileName });
 
     setScreen("main-screen");
     renderServerTable();
