@@ -416,15 +416,13 @@ window.addEventListener("DOMContentLoaded", async () => {
             );
         } else if(currentLinkSet.postfix === ".tgz") {
             await invoke("uncompress_tarball", { "path": downloadedBinaryFileTmpAbsolute });
-
             await rename(
                 "cloudflared",
                 executableBinaryFile,
                 { oldPathBaseDir: BaseDirectory.AppData, newPathBaseDir: BaseDirectory.AppData }
             );
+            await remove(downloadedBinaryFileTmp, { baseDir: BaseDirectory.AppData });
         }
-
-        await remove(downloadedBinaryFileTmp, { baseDir: BaseDirectory.AppData });
     }
 
     cloudflaredPath = await path.join(appDataPath, executableBinaryFile);
