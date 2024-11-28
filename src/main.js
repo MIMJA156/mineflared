@@ -52,36 +52,6 @@ function setScreen(newScreen) {
 
 //--
 
-async function checkAndKillProcess(processName) {
-    let findCommand, killCommand;
-
-    if (await platform() === "windows") {
-        findCommand = ['cmd', ['/c', `tasklist | findstr ${processName}`]];
-        killCommand = ['cmd', ['/c', `taskkill /IM ${processName} /F`]];
-    } else {
-        findCommand = ['sh', ['-c', `pgrep -f ${processName}`]];
-        killCommand = ['sh', ['-c', `pkill -f ${processName}`]];
-    }
-
-    const findProcess = Command.create(...findCommand);
-    const findOutput = await findProcess.execute();
-
-    if (findOutput.stdout.trim()) {
-        console.log(`Process found: ${findOutput.stdout}`);
-
-        const killProcess = Command.create(...killCommand);
-        const killOutput = await killProcess.execute();
-
-        if (killOutput.code === 0) {
-            console.log(`Successfully killed process: ${processName}`);
-        } else {
-            console.error(`Failed to kill process: ${killOutput.stderr}`);
-        }
-    }
-}
-
-//--
-
 async function beginConnectionOnIndex(serverIndex) {
     setScreen("loading-screen");
     let selectedServer = servers[serverIndex];
@@ -366,7 +336,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     cloudflaredPath = await path.join(appDataPath, fullBinaryFileName);
-    await checkAndKillProcess(fullBinaryFileName);
+    await invoke("kill_process", { "processName": "cloudflared.exe" });
 
     setScreen("main-screen");
     renderServerTable();

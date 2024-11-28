@@ -1,6 +1,21 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use sysinfo::System;
+
+#[tauri::command]
+fn kill_process(process_name: String) {
+    let s = System::new_all();
+    for (_, process) in s.processes() {
+        if let Some(name) = process.name().to_str() {
+            if name == process_name  {
+                process.kill();
+                println!("killed item with name {}", name)
+            }
+        }
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
@@ -9,6 +24,7 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![kill_process])
         .run(tauri::generate_context!())
         .expect("Error while running tauri application");
 }
