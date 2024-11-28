@@ -34,8 +34,24 @@
       "identifier": "shell:allow-spawn",
       "allow": [
         {
+          "name": "cloudflared-exe",
+          "cmd": "$APPDATA/cloudflared-mineflared.exe",
+          "args": [
+            "access",
+            "tcp",
+            "--hostname",
+            {
+              "validator": ".+"
+            },
+            "--url",
+            {
+              "validator": ".+"
+            }
+          ]
+        },
+        {
           "name": "cloudflared",
-          "cmd": "$APPDATA/cloudflared.mineflared.exe",
+          "cmd": "$APPDATA/cloudflared-mineflared",
           "args": [
             "access",
             "tcp",

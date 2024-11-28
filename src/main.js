@@ -1,5 +1,5 @@
 const { open, write, rename, remove, exists, mkdir, BaseDirectory } = window.__TAURI__.fs;
-const { arch, platform } = window.__TAURI__.os;
+const { arch, platform, exeExtension } = window.__TAURI__.os;
 const { appDataDir } = window.__TAURI__.path;
 const { message } = window.__TAURI__.dialog;
 const { Command } = window.__TAURI__.shell;
@@ -23,7 +23,16 @@ const screens = {
 const links = [
     { platform: "windows", arch: "x86_64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-386.exe", postfix: ".exe" },
     { platform: "windows", arch: "aarch64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe", postfix: ".exe" },
+
+    { platform: "macos", arch: "aarch64", link: "https://github.com/cloudflare/cloudflared/releases/download/2024.11.1/cloudflared-darwin-arm64.tgz", postfix: ".tgz" },
 ];
+
+async function getExePostfix() {
+    const exe = await exeExtension();
+    return exe != "" ? `.${exe}` : exe;
+}
+
+//--
 
 let currentScreenIndex = 0;
 let servers = [];
@@ -59,7 +68,14 @@ async function beginConnectionOnIndex(serverIndex) {
     let selectedServer = servers[serverIndex];
     let localHostPort = Math.floor(25565 + Math.random() * 2000);
 
-    let command = await Command.create(`cloudflared`, ["access", "tcp", "--hostname", selectedServer.ip, "--url", `localhost:${localHostPort}`]);
+    let commandName;
+    if (await exeExtension() === "exe") {
+        commandName = "cloudflared-exe";
+    } else {
+        commandName = "cloudflared";
+    }
+
+    let command = await Command.create(commandName, ["access", "tcp", "--hostname", selectedServer.ip, "--url", `localhost:${localHostPort}`]);
     command.on('error', error => console.error(error));
     command.stdout.on('data', line => console.log(line));
     command.stderr.on('data', line => console.log(line));
@@ -355,15 +371,18 @@ window.addEventListener("DOMContentLoaded", async () => {
         exit(1);
     }
 
-    const fullBinaryFileName = "cloudflared.mineflared" + currentLinkSet.postfix;
-    const fullBinaryFileNameTmp = fullBinaryFileName + ".tmp"
-
     const appDataPath = await path.appDataDir();
-    if (!(await exists(appDataPath))) await mkdir(appDataPath);
-    if (!(await exists(fullBinaryFileName, { baseDir: BaseDirectory.AppData }))) {
 
-        if(await exists(fullBinaryFileNameTmp, { baseDir: BaseDirectory.AppData }))
-            await remove(fullBinaryFileNameTmp, { baseDir: BaseDirectory.AppData });
+    const downloadedBinaryFileTmp = "cloudflared-mineflared" + currentLinkSet.postfix + ".tmp"
+    const downloadedBinaryFileTmpAbsolute = await path.join(appDataPath, downloadedBinaryFileTmp);
+
+    const executableBinaryFile = "cloudflared-mineflared" + await getExePostfix();
+
+    if (!(await exists(appDataPath))) await mkdir(appDataPath);
+    if (!(await exists(executableBinaryFile, { baseDir: BaseDirectory.AppData }))) {
+
+        if(await exists(downloadedBinaryFileTmp, { baseDir: BaseDirectory.AppData }))
+            await remove(downloadedBinaryFileTmp, { baseDir: BaseDirectory.AppData });
 
         LoggingViewReset();
         LoggingViewAdd("downloading cloudflared . . .");
@@ -379,7 +398,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         const maxLoops = Math.ceil(data.byteLength / chunkSize);
         LoggingViewAdd("installing cloudflared . . . ");
 
-        const file = await open(fullBinaryFileNameTmp, { write: true, create: true, baseDir: BaseDirectory.AppData });
+        const file = await open(downloadedBinaryFileTmp, { write: true, create: true, baseDir: BaseDirectory.AppData });
         for (let i = 0; i < data.byteLength; i += chunkSize) {
             const slice = view.slice(i, i + chunkSize);
             await file.write(slice.buffer);
@@ -389,17 +408,29 @@ window.addEventListener("DOMContentLoaded", async () => {
         }
         await file.close();
 
-        await rename(
-            fullBinaryFileNameTmp,
-            fullBinaryFileName,
-            { oldPathBaseDir: BaseDirectory.AppData, newPathBaseDir: BaseDirectory.AppData }
-        );
+        if (currentLinkSet.postfix === ".exe") {
+            await rename(
+                downloadedBinaryFileTmp,
+                executableBinaryFile,
+                { oldPathBaseDir: BaseDirectory.AppData, newPathBaseDir: BaseDirectory.AppData }
+            );
+        } else if(currentLinkSet.postfix === ".tgz") {
+            await invoke("uncompress_tarball", { "path": downloadedBinaryFileTmpAbsolute });
+
+            await rename(
+                "cloudflared",
+                executableBinaryFile,
+                { oldPathBaseDir: BaseDirectory.AppData, newPathBaseDir: BaseDirectory.AppData }
+            );
+        }
+
+        await remove(downloadedBinaryFileTmp, { baseDir: BaseDirectory.AppData });
     }
 
-    cloudflaredPath = await path.join(appDataPath, fullBinaryFileName);
+    cloudflaredPath = await path.join(appDataPath, executableBinaryFile);
 
     LoggingViewAdd("cleaning old processes . . .");
-    await invoke("kill_process", { "processName": fullBinaryFileName });
+    await invoke("kill_process", { "processName": executableBinaryFile });
 
     setScreen("main-screen");
     renderServerTable();
