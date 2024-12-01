@@ -24,7 +24,8 @@ const links = [
     { platform: "windows", arch: "x86_64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-386.exe", postfix: ".exe" },
     { platform: "windows", arch: "aarch64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe", postfix: ".exe" },
 
-    { platform: "macos", arch: "aarch64", link: "https://github.com/cloudflare/cloudflared/releases/download/2024.11.1/cloudflared-darwin-arm64.tgz", postfix: ".tgz" },
+    { platform: "macos", arch: "x86_64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-amd64.tgz", postfix: ".tgz" },
+    { platform: "macos", arch: "aarch64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-arm64.tgz", postfix: ".tgz" },
 ];
 
 const userSaveData = "data.json";
