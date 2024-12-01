@@ -21,10 +21,19 @@ const screens = {
 };
 
 const links = [
-    { platform: "windows", arch: "x86_64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-386.exe", postfix: ".exe" },
-    { platform: "windows", arch: "aarch64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe", postfix: ".exe" },
+    // Windows
+    { platform: "windows", arch: "x86_64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe", postfix: ".exe" },
+    { platform: "windows", arch: "x86", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-386.exe", postfix: ".exe" },
 
-    { platform: "macos", arch: "aarch64", link: "https://github.com/cloudflare/cloudflared/releases/download/2024.11.1/cloudflared-darwin-arm64.tgz", postfix: ".tgz" },
+    // MacOS
+    { platform: "macos", arch: "x86_64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-amd64.tgz", postfix: ".tgz" },
+    { platform: "macos", arch: "aarch64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-arm64.tgz", postfix: ".tgz" },
+
+    // Linux
+    { platform: "linux", arch: "x86", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-386", postfix: "" },
+    { platform: "linux", arch: "x86_64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64", postfix: "" },
+    { platform: "linux", arch: "arm", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm", postfix: "" },
+    { platform: "linux", arch: "arm64", link: "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64", postfix: "" }
 ];
 
 async function getExePostfix() {
@@ -88,7 +97,7 @@ async function beginConnectionOnIndex(serverIndex) {
 }
 
 async function closeCurrentConnections() {
-    if(cloudflaredProcess != null) {
+    if (cloudflaredProcess != null) {
         await cloudflaredProcess.kill();
     } else {
         await checkAndKillProcess("cloudflared.exe");
@@ -358,6 +367,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     const currentPlatform = await platform();
     const currentArch = await arch();
 
+    console.log(currentArch)
+    console.log(currentPlatform)
+
     let currentLinkSet;
     for (const iterator of links) {
         if (iterator.arch === currentArch && iterator.platform === currentPlatform) {
@@ -381,7 +393,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (!(await exists(appDataPath))) await mkdir(appDataPath);
     if (!(await exists(executableBinaryFile, { baseDir: BaseDirectory.AppData }))) {
 
-        if(await exists(downloadedBinaryFileTmp, { baseDir: BaseDirectory.AppData }))
+        if (await exists(downloadedBinaryFileTmp, { baseDir: BaseDirectory.AppData }))
             await remove(downloadedBinaryFileTmp, { baseDir: BaseDirectory.AppData });
 
         LoggingViewReset();
@@ -414,8 +426,16 @@ window.addEventListener("DOMContentLoaded", async () => {
                 executableBinaryFile,
                 { oldPathBaseDir: BaseDirectory.AppData, newPathBaseDir: BaseDirectory.AppData }
             );
-        } else if(currentLinkSet.postfix === ".tgz") {
+        } else if (currentLinkSet.postfix === ".tgz") {
             await invoke("uncompress_tarball", { "path": downloadedBinaryFileTmpAbsolute });
+            await rename(
+                "cloudflared",
+                executableBinaryFile,
+                { oldPathBaseDir: BaseDirectory.AppData, newPathBaseDir: BaseDirectory.AppData }
+            );
+            await remove(downloadedBinaryFileTmp, { baseDir: BaseDirectory.AppData });
+        } else if (currentLinkSet.postfix === "") {
+            await invoke("set_permissions", { path: downloadedBinaryFileTmpAbsolute, permissions: 0o755 });
             await rename(
                 "cloudflared",
                 executableBinaryFile,
