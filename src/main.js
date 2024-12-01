@@ -1,4 +1,4 @@
-const { open, write, rename, remove, exists, mkdir, BaseDirectory } = window.__TAURI__.fs;
+const { open, write, rename, remove, exists, mkdir, readFile, writeFile, BaseDirectory } = window.__TAURI__.fs;
 const { arch, platform, exeExtension } = window.__TAURI__.os;
 const { appDataDir } = window.__TAURI__.path;
 const { message } = window.__TAURI__.dialog;
@@ -27,6 +27,8 @@ const links = [
     { platform: "macos", arch: "aarch64", link: "https://github.com/cloudflare/cloudflared/releases/download/2024.11.1/cloudflared-darwin-arm64.tgz", postfix: ".tgz" },
 ];
 
+const userSaveData = "data.json";
+
 async function getExePostfix() {
     const exe = await exeExtension();
     return exe != "" ? `.${exe}` : exe;
@@ -34,11 +36,14 @@ async function getExePostfix() {
 
 //--
 
-let currentScreenIndex = 0;
-let servers = [];
-let isInDeleteMode = false;
+let userData = {
+    servers: [],
+}
+
 let cloudflaredPath;
 let cloudflaredProcess;
+let currentScreenIndex = 0;
+let isInDeleteMode = false;
 
 function setScreen(newScreen) {
     let newScreenIndex = newScreen;
@@ -61,11 +66,25 @@ function setScreen(newScreen) {
     currentScreenIndex = newScreenIndex;
 }
 
+async function saveUserData() {
+    const userDataString = JSON.stringify(userData);
+    const encoded = new TextEncoder().encode(userDataString);
+    await writeFile(userSaveData, encoded, { baseDir: BaseDirectory.AppData });
+}
+
+async function loadUserData() {
+    if (await exists(userSaveData, { baseDir: BaseDirectory.AppData })) {
+        const encoded = await readFile(userSaveData, { baseDir: BaseDirectory.AppData });
+        const userDataString = new TextDecoder().decode(encoded);
+        userData = JSON.parse(userDataString);
+    }
+}
+
 //--
 
 async function beginConnectionOnIndex(serverIndex) {
     setScreen("loading-screen");
-    let selectedServer = servers[serverIndex];
+    let selectedServer = userData.servers[serverIndex];
     let localHostPort = Math.floor(25565 + Math.random() * 2000);
 
     let commandName;
@@ -170,7 +189,7 @@ function renderServerTable() {
     `;
 
     let count = 0;
-    for (const server of servers) {
+    for (const server of userData.servers) {
         serverTable.innerHTML += `
         <div class="row">
             <div class="title px18">${server.name}</div>
@@ -207,7 +226,8 @@ function removeAllSelectedServers() {
         let checkbox = row.querySelectorAll('input[type="checkbox"]');
         if (checkbox.length > 0) {
             if (checkbox[0].checked) {
-                servers.splice(count, 1);
+                userData.servers.splice(count, 1);
+                saveUserData();
                 count -= 1;
             }
             count++;
@@ -292,7 +312,8 @@ function checkAndSaveNewServer() {
         }
     }
 
-    servers.push(newServer);
+    userData.servers.push(newServer);
+    saveUserData();
     showMainScreen();
 }
 
@@ -310,12 +331,13 @@ function checkAndSaveExistingServer() {
         serverToEdit[key] = newServer[key];
     }
 
+    saveUserData();
     showMainScreen();
 }
 
 function enterSettingsOnIndex(index) {
     isEditingExistingItem = true;
-    serverToEdit = servers[index];
+    serverToEdit = userData.servers[index];
 
     setScreen("edit-screen");
     renderEditTable();
@@ -426,6 +448,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     cloudflaredPath = await path.join(appDataPath, executableBinaryFile);
+
+    LoggingViewAdd("loading settings . . .");
+    await loadUserData();
 
     LoggingViewAdd("cleaning old processes . . .");
     await invoke("kill_process", { "processName": executableBinaryFile });
