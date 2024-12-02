@@ -4,15 +4,15 @@
 use std::{fs::File, path::Path};
 
 use flate2::read::GzDecoder;
-use tar::Archive;
 use sysinfo::System;
+use tar::Archive;
 
 #[tauri::command]
 fn kill_process(process_name: String) {
     let s = System::new_all();
     for (_, process) in s.processes() {
         if let Some(name) = process.name().to_str() {
-            if name == process_name  {
+            if name == process_name {
                 process.kill();
                 println!("killed item with name {}", name)
             }
@@ -37,6 +37,7 @@ fn uncompress_tarball(path: String) {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_http::init())

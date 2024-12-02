@@ -29,6 +29,7 @@
     },
     "http:allow-fetch",
     "dialog:allow-message",
+    "dialog:allow-ask",
     "shell:default",
     {
       "identifier": "shell:allow-spawn",
@@ -93,6 +94,8 @@
       ]
     },
     "shell:allow-kill",
-    "core:window:allow-destroy"
+    "core:window:allow-destroy",
+    "updater:default",
+    "process:default"
   ]
 }

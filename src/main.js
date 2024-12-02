@@ -1,10 +1,11 @@
 const { open, write, rename, remove, exists, mkdir, readFile, writeFile, BaseDirectory } = window.__TAURI__.fs;
 const { arch, platform, exeExtension } = window.__TAURI__.os;
+const { exit, relaunch } = window.__TAURI__.process;
+const { message, ask } = window.__TAURI__.dialog;
 const { appDataDir } = window.__TAURI__.path;
-const { message } = window.__TAURI__.dialog;
+const { check } = window.__TAURI__.updater;
 const { Command } = window.__TAURI__.shell;
 const { listen } = window.__TAURI__.event;
-const { exit } = window.__TAURI__.process;
 const { invoke } = window.__TAURI__.core;
 const { fetch } = window.__TAURI__.http;
 const path = window.__TAURI__.path;
@@ -67,6 +68,8 @@ function setScreen(newScreen) {
     currentScreenIndex = newScreenIndex;
 }
 
+//--
+
 async function saveUserData() {
     const userDataString = JSON.stringify(userData);
     const encoded = new TextEncoder().encode(userDataString);
@@ -108,7 +111,7 @@ async function beginConnectionOnIndex(serverIndex) {
 }
 
 async function closeCurrentConnections() {
-    if(cloudflaredProcess != null) {
+    if (cloudflaredProcess != null) {
         await cloudflaredProcess.kill();
     } else {
         await checkAndKillProcess("cloudflared.exe");
@@ -378,6 +381,33 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     setScreen("logging-screen");
 
+    LoggingViewAdd("checking app for updates . . .");
+    const update = await check();
+    if (update && update.available) {
+        const installUpdateConfirmation = await ask("A new version of mineflared has been found.\nUpdate now?", { title: "Updater", kind: "info" });
+        if (installUpdateConfirmation) {
+            let totalLength = 0;
+            let accumulatedLength = 0;
+
+            await update.downloadAndInstall(async (onEvent) => {
+                switch (onEvent.event) {
+                    case "Started":
+                        LoggingViewAdd("downloading update . . .");
+                        totalLength = onEvent.data.contentLength;
+                        console.log(onEvent);
+                        break;
+
+                    case "Progress":
+                        accumulatedLength += onEvent.data.chunkLength;
+                        LoggingViewReplace(`downloading update . . . ${Math.round(100 * (accumulatedLength / totalLength))}%`);
+                        console.log(onEvent);
+                        break;
+                }
+            })
+        }
+    }
+    if(update) await update.close();
+
     const currentPlatform = await platform();
     const currentArch = await arch();
 
@@ -404,7 +434,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (!(await exists(appDataPath))) await mkdir(appDataPath);
     if (!(await exists(executableBinaryFile, { baseDir: BaseDirectory.AppData }))) {
 
-        if(await exists(downloadedBinaryFileTmp, { baseDir: BaseDirectory.AppData }))
+        if (await exists(downloadedBinaryFileTmp, { baseDir: BaseDirectory.AppData }))
             await remove(downloadedBinaryFileTmp, { baseDir: BaseDirectory.AppData });
 
         LoggingViewReset();
@@ -437,7 +467,7 @@ window.addEventListener("DOMContentLoaded", async () => {
                 executableBinaryFile,
                 { oldPathBaseDir: BaseDirectory.AppData, newPathBaseDir: BaseDirectory.AppData }
             );
-        } else if(currentLinkSet.postfix === ".tgz") {
+        } else if (currentLinkSet.postfix === ".tgz") {
             await invoke("uncompress_tarball", { "path": downloadedBinaryFileTmpAbsolute });
             await rename(
                 "cloudflared",
