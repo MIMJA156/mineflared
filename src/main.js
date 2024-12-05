@@ -71,6 +71,7 @@ function setScreen(newScreen) {
 //--
 
 async function saveUserData() {
+    validateUserData();
     const userDataString = JSON.stringify(userData);
     const encoded = new TextEncoder().encode(userDataString);
     await writeFile(userSaveData, encoded, { baseDir: BaseDirectory.AppData });
@@ -81,6 +82,18 @@ async function loadUserData() {
         const encoded = await readFile(userSaveData, { baseDir: BaseDirectory.AppData });
         const userDataString = new TextDecoder().decode(encoded);
         userData = JSON.parse(userDataString);
+        validateUserData();
+    }
+}
+
+async function validateUserData() {
+    if(userData === undefined) userData = {};
+    if(userData.servers === undefined) userData.servers = [];
+
+    for (const server of userData.servers) {
+        if(server === undefined) server = {};
+        if(server.name === undefined) server.name = "";
+        if(server.ip === undefined) server.ip = "";
     }
 }
 
@@ -383,6 +396,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     LoggingViewAdd("checking app for updates . . .");
     const update = await check();
+
     if (update && update.available) {
         const installUpdateConfirmation = await ask("A new version of mineflared has been found.\nUpdate now?", { title: "Updater", kind: "info" });
         if (installUpdateConfirmation) {
@@ -394,13 +408,15 @@ window.addEventListener("DOMContentLoaded", async () => {
                     case "Started":
                         LoggingViewAdd("downloading update . . .");
                         totalLength = onEvent.data.contentLength;
-                        console.log(onEvent);
                         break;
 
                     case "Progress":
                         accumulatedLength += onEvent.data.chunkLength;
                         LoggingViewReplace(`downloading update . . . ${Math.round(100 * (accumulatedLength / totalLength))}%`);
-                        console.log(onEvent);
+                        break;
+                    
+                    case "Finished":
+                        LoggingViewAdd("app update downloaded! restarting . . .");
                         break;
                 }
             })
