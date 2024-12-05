@@ -92,8 +92,14 @@ async function validateUserData() {
 
     for (const server of userData.servers) {
         if(server === undefined) server = {};
-        if(server.name === undefined) server.name = "";
-        if(server.ip === undefined) server.ip = "";
+        if(server.name === undefined) server.name = "default";
+        if(server.source === undefined) server.source = "play.example.com";
+        if(server.target === undefined) server.target = "localhost:5050";
+
+        if(server.ip !== undefined) {
+            server.source = server.ip;
+            server.ip = undefined;
+        }
     }
 }
 
@@ -102,7 +108,6 @@ async function validateUserData() {
 async function beginConnectionOnIndex(serverIndex) {
     setScreen("loading-screen");
     let selectedServer = userData.servers[serverIndex];
-    let localHostPort = Math.floor(25565 + Math.random() * 2000);
 
     let commandName;
     if (await exeExtension() === "exe") {
@@ -111,7 +116,7 @@ async function beginConnectionOnIndex(serverIndex) {
         commandName = "cloudflared";
     }
 
-    let command = await Command.create(commandName, ["access", "tcp", "--hostname", selectedServer.ip, "--url", `localhost:${localHostPort}`]);
+    let command = await Command.create(commandName, ["access", "tcp", "--hostname", selectedServer.source, "--url", selectedServer.target]);
     command.on('error', error => console.error(error));
     command.stdout.on('data', line => console.log(line));
     command.stderr.on('data', line => console.log(line));
@@ -120,7 +125,7 @@ async function beginConnectionOnIndex(serverIndex) {
     cloudflaredProcess = child;
 
     setScreen("connected-screen");
-    document.getElementById("connected-screen-server").innerHTML = `localhost:${localHostPort}`;
+    document.getElementById("connected-screen-server").innerHTML = selectedServer.target;
 }
 
 async function closeCurrentConnections() {
@@ -266,7 +271,8 @@ let serverToEdit;
 
 const EditTableSkeleton = {
     name: "",
-    ip: "",
+    source: "",
+    target: "",
 };
 
 function renderEditTable() {
@@ -292,7 +298,7 @@ function renderEditTable() {
             <div class="row">
                 <div class="title px18">${key}</div>
                  <div class="actions">
-                    <input type="text" value="${isEditingExistingItem ? serverToEdit[key] : ""}"/>
+                    <input type="text" value="${isEditingExistingItem ? serverToEdit[key] : ""}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
                 </div>
             </div>
         `;
