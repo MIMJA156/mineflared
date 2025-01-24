@@ -21,7 +21,7 @@
   },
   "productName": "mineflared",
   "mainBinaryName": "mineflared",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "identifier": "com.mimja156.mineflared",
   "plugins": {
     "updater": {
