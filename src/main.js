@@ -87,16 +87,16 @@ async function loadUserData() {
 }
 
 async function validateUserData() {
-    if(userData === undefined) userData = {};
-    if(userData.servers === undefined) userData.servers = [];
+    if (userData === undefined) userData = {};
+    if (userData.servers === undefined) userData.servers = [];
 
     for (const server of userData.servers) {
-        if(server === undefined) server = {};
-        if(server.name === undefined) server.name = "default";
-        if(server.source === undefined) server.source = "play.example.com";
-        if(server.target === undefined) server.target = "localhost:5050";
+        if (server === undefined) server = {};
+        if (server.name === undefined) server.name = "default";
+        if (server.source === undefined) server.source = "play.example.com";
+        if (server.target === undefined) server.target = "localhost:5050";
 
-        if(server.ip !== undefined) {
+        if (server.ip !== undefined) {
             server.source = server.ip;
             server.ip = undefined;
         }
@@ -270,9 +270,25 @@ let isEditingExistingItem = false;
 let serverToEdit;
 
 const EditTableSkeleton = {
-    name: "",
-    source: "",
-    target: "",
+    name: {
+        placeholder: "server name",
+        required: true,
+        type: "string"
+    },
+    source: {
+        placeholder: "source ip",
+        required: true,
+        type: "string"
+    },
+    target: {
+        placeholder: "target ip (random if left empty)",
+        required: false,
+        generator: () => {
+            let port = Math.floor(Math.random() * (49151 - 1024) + 1024);
+            return `localhost:${port}`
+        },
+        type: "string"
+    },
 };
 
 function renderEditTable() {
@@ -296,9 +312,9 @@ function renderEditTable() {
     for (const key of Object.keys(EditTableSkeleton)) {
         editTable.innerHTML += `
             <div class="row">
-                <div class="title px18">${key}</div>
+                <div class="title px18">${key}${EditTableSkeleton[key].required ? `<span style="color: red;">*</span>` : ""}</div>
                  <div class="actions">
-                    <input type="text" value="${isEditingExistingItem ? serverToEdit[key] : ""}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+                    <input type="text" value="${isEditingExistingItem ? serverToEdit[key] : ""}" placeholder="${EditTableSkeleton[key].placeholder}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
                 </div>
             </div>
         `;
@@ -309,13 +325,15 @@ function fillAndCopyEditTableSkeleton() {
     let editTable = document.getElementById("edit-table");
     let editTableRows = editTable.getElementsByClassName("row");
     let skeletonKeys = Object.keys(EditTableSkeleton);
-    let newServer = JSON.parse(JSON.stringify(EditTableSkeleton));
+    let newServer = {};
+
+    skeletonKeys.forEach(key => newServer[key] = "");
 
     let count = 0;
     for (const row of editTableRows) {
         let input = row.getElementsByTagName("input");
         if (input.length > 0) {
-            if (typeof EditTableSkeleton[skeletonKeys[count]] === "string") {
+            if (EditTableSkeleton[skeletonKeys[count]].type === "string") {
                 newServer[skeletonKeys[count]] = input[0].value.trim();
             }
             count++;
@@ -330,8 +348,12 @@ function checkAndSaveNewServer() {
 
     for (const key in newServer) {
         if (newServer[key] === "") {
-            message(`"${key}" can not be empty.`, { title: "mineflared", type: "error" });
-            return;
+            if (EditTableSkeleton[key].required) {
+                message(`"${key}" can not be empty.`, { title: "mineflared", type: "error" });
+                return;
+            } else if (EditTableSkeleton[key].generator !== undefined) {
+                newServer[key] = EditTableSkeleton[key].generator();
+            }
         }
     }
 
@@ -345,8 +367,12 @@ function checkAndSaveExistingServer() {
 
     for (const key in newServer) {
         if (newServer[key] === "") {
-            message(`"${key}" can not be empty.`, { title: "mineflared", type: "error" });
-            return;
+            if (EditTableSkeleton[key].required) {
+                message(`"${key}" can not be empty.`, { title: "mineflared", type: "error" });
+                return;
+            } else {
+                newServer[key] = EditTableSkeleton[key].generator();
+            }
         }
     }
 
@@ -420,7 +446,7 @@ window.addEventListener("DOMContentLoaded", async () => {
                         accumulatedLength += onEvent.data.chunkLength;
                         LoggingViewReplace(`downloading update . . . ${Math.round(100 * (accumulatedLength / totalLength))}%`);
                         break;
-                    
+
                     case "Finished":
                         LoggingViewAdd("app update downloaded! restarting . . .");
                         break;
@@ -428,22 +454,22 @@ window.addEventListener("DOMContentLoaded", async () => {
             })
         }
     }
-    if(update) await update.close();
+    if (update) await update.close();
 
     const currentPlatform = await platform();
     const currentArch = await arch();
 
-    let currentLinkSet;
-    for (const iterator of links) {
-        if (iterator.arch === currentArch && iterator.platform === currentPlatform) {
-            currentLinkSet = iterator;
+    let currentLinkSet = null;
+    for (const link of links) {
+        if (link.arch === currentArch && link.platform === currentPlatform) {
+            currentLinkSet = link;
             break;
         }
     }
 
     if (currentLinkSet == null) {
         setScreen("un-supported-device");
-        exit(1);
+        return;
     }
 
     const appDataPath = await path.appDataDir();
@@ -473,7 +499,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         const maxLoops = Math.ceil(data.byteLength / chunkSize);
         LoggingViewAdd("installing cloudflared . . . ");
 
-        const file = await open(downloadedBinaryFileTmp, { write: true, create: true, baseDir: BaseDirectory.AppData });
+        const file = open(downloadedBinaryFileTmp, { write: true, create: true, baseDir: BaseDirectory.AppData });
         for (let i = 0; i < data.byteLength; i += chunkSize) {
             const slice = view.slice(i, i + chunkSize);
             await file.write(slice.buffer);
@@ -481,7 +507,7 @@ window.addEventListener("DOMContentLoaded", async () => {
             LoggingViewReplace(`installing cloudflared . . . ${Math.round(100 * (loops / maxLoops))}%`, 0);
             loops += 1;
         }
-        await file.close();
+        file.close();
 
         if (currentLinkSet.postfix === ".exe") {
             await rename(
