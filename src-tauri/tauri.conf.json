@@ -6,7 +6,10 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "app"],
+    "targets": [
+      "nsis",
+      "app"
+    ],
     "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
@@ -18,7 +21,7 @@
   },
   "productName": "mineflared",
   "mainBinaryName": "mineflared",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "identifier": "com.mimja156.mineflared",
   "plugins": {
     "updater": {
