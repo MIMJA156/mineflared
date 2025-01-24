@@ -501,7 +501,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         const maxLoops = Math.ceil(data.byteLength / chunkSize);
         LoggingViewAdd("installing cloudflared . . . ");
 
-        const file = open(downloadedBinaryFileTmp, { write: true, create: true, baseDir: BaseDirectory.AppData });
+        const file = await open(downloadedBinaryFileTmp, { write: true, create: true, baseDir: BaseDirectory.AppData });
         for (let i = 0; i < data.byteLength; i += chunkSize) {
             const slice = view.slice(i, i + chunkSize);
             await file.write(slice.buffer);
@@ -509,7 +509,7 @@ window.addEventListener("DOMContentLoaded", async () => {
             LoggingViewReplace(`installing cloudflared . . . ${Math.round(100 * (loops / maxLoops))}%`, 0);
             loops += 1;
         }
-        file.close();
+        await file.close();
 
         if (currentLinkSet.postfix === ".exe") {
             await rename(
