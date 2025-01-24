@@ -1,65 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <link rel="stylesheet" href="styles.css" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Tauri App</title>
-        <script type="module" src="/main.js" defer></script>
-    </head>
-    <body>
-        <div id="text"></div>
 
-        <div id="main-screen">
-            <div class="container">
-                <div id="connection-table"></div>
-            </div>
+<head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tauri App</title>
+    <script type="module" src="/main.js" defer></script>
+</head>
+
+<body>
+    <div id="text"></div>
+
+    <div id="main-screen">
+        <div class="container">
+            <div id="connection-table"></div>
         </div>
-        <div id="edit-screen">
-            <div class="container">
-                <div id="edit-table">
-                    <div class="row">
-                        <div class="title px18">Name</div>
-                        <div class="actions">
-                            <input type="text" />
-                        </div>
+    </div>
+    <div id="edit-screen">
+        <div class="container">
+            <div id="edit-table">
+                <div class="row">
+                    <div class="title px18">Name</div>
+                    <div class="actions">
+                        <input type="text" />
                     </div>
                 </div>
             </div>
         </div>
-        <div id="loading-screen">
-            <div class="container">
-                <div id="loading-wrapper">
-                    <img class="huge-svg" src="/assets/loading-icon.svg" />
-                </div>
+    </div>
+    <div id="loading-screen">
+        <div class="container">
+            <div id="loading-wrapper">
+                <img class="huge-svg" src="/assets/loading-icon.svg" />
             </div>
         </div>
-        <div id="logging-screen">
-            <div class="container">
-                <div id="logging-wrapper">
-                    <div id="logging-view"></div>
-                </div>
+    </div>
+    <div id="logging-screen">
+        <div class="container">
+            <div id="logging-wrapper">
+                <div id="logging-view"></div>
             </div>
         </div>
-        <div id="connected-screen">
-            <div class="container">
-                <div id="connected-wrapper">
-                    <div class="title px18">Server running on</div>
-                    <div class="title px32" id="connected-screen-server">localhost:1233</div>
-                    <br />
-                    <br />
-                    <button class="connected-screen-btn" onclick="closeCurrentConnections()">
-                        <img class="medium-svg" src="/assets/stop-icon.svg" />
-                        Close Server
-                    </button>
-                </div>
+    </div>
+    <div id="connected-screen">
+        <div class="container">
+            <div id="connected-wrapper">
+                <div class="title px18">Server running on</div>
+                <div class="title px32" id="connected-screen-server">localhost:1233</div>
+                <br />
+                <br />
+                <button class="connected-screen-btn" onclick="closeCurrentConnections()">
+                    <img class="medium-svg" src="/assets/stop-icon.svg" />
+                    Close Server
+                </button>
             </div>
         </div>
-        <div id="un-supported-device">
-            <div class="container">
-                <h2>This device is not supported!</h2>
-                <h4>Program has been suspended.</h4>
-            </div>
+    </div>
+    <div id="un-supported-device">
+        <div class="container">
+            <h2>This device is not supported!</h2>
+            <h4>Program has been suspended.</h4>
         </div>
-    </body>
+    </div>
+</body>
+
 </html>

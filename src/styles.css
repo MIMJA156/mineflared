@@ -37,7 +37,7 @@
     align-items: center;
 }
 
-#logging-wrapper > #logging-view {
+#logging-wrapper>#logging-view {
     color: white;
 
     display: flex;
@@ -48,12 +48,15 @@
 
     overflow-y: scroll;
 
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE/Edge */
 }
 
-#logging-wrapper > #logging-view::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, and Opera */
+#logging-wrapper>#logging-view::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari, and Opera */
 }
 
 #connected-wrapper {
@@ -117,7 +120,7 @@ body {
     padding-right: 10px;
 }
 
-.actions > button {
+.actions>button {
     background-color: transparent;
 
     border: none;
@@ -128,7 +131,7 @@ body {
     justify-content: center;
 }
 
-.actions > input[type="text"] {
+.actions>input[type="text"] {
     width: 200px;
     height: 20px;
     outline: none;
@@ -139,7 +142,7 @@ body {
     border-bottom: 2px solid black;
 }
 
-.actions > input[type="checkbox"] {
+.actions>input[type="checkbox"] {
     width: 20px;
     height: 20px;
     cursor: pointer;

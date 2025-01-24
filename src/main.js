@@ -449,6 +449,8 @@ window.addEventListener("DOMContentLoaded", async () => {
 
                     case "Finished":
                         LoggingViewAdd("app update downloaded! restarting . . .");
+                        await delay(150);
+                        await relaunch();
                         break;
                 }
             })
