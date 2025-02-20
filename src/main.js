@@ -92,9 +92,9 @@ async function validateUserData() {
 
     for (const server of userData.servers) {
         if (server === undefined) server = {};
-        if (server.name === undefined) server.name = "default";
+        if (server.name === undefined) server.name = "[filler]";
         if (server.source === undefined) server.source = "play.example.com";
-        if (server.target === undefined) server.target = "localhost:5050";
+        if (server.target === undefined) server.target = "localhost:9999";
 
         if (server.ip !== undefined) {
             server.source = server.ip;
@@ -287,6 +287,9 @@ const EditTableSkeleton = {
             let port = Math.floor(Math.random() * (49151 - 1024) + 1024);
             return `localhost:${port}`
         },
+        validator: (given) => {
+            return given.match(/(localhost:[0-9]*)|(127\.0\.0\.1:[0-9]*)/gm);
+        },
         type: "string"
     },
 };
@@ -354,6 +357,11 @@ function checkAndSaveNewServer() {
             } else if (EditTableSkeleton[key].generator !== undefined) {
                 newServer[key] = EditTableSkeleton[key].generator();
             }
+        } else if (EditTableSkeleton[key].validator !== undefined) {
+            if (!EditTableSkeleton[key].validator(newServer[key])) {
+                message(`"${key}" is not a valid value.`, { title: "mineflared", type: "error" });
+                return;
+            }
         }
     }
 
@@ -373,6 +381,14 @@ function checkAndSaveExistingServer() {
             } else {
                 newServer[key] = EditTableSkeleton[key].generator();
             }
+        }
+        
+        if(
+            EditTableSkeleton[key].validator &&
+            !EditTableSkeleton[key].validator(newServer[key])
+        ) {
+            message(`"${key}" has an invalid value.`, { title: "mineflared", type: "error" });
+            return;
         }
     }
 
@@ -449,6 +465,10 @@ window.addEventListener("DOMContentLoaded", async () => {
 
                     case "Finished":
                         LoggingViewAdd("app update downloaded! restarting . . .");
+                        setTimeout(() => {
+                            LoggingViewAdd("this taking longer than expected, please manually restart . . .");
+                        }, 1000);
+
                         await delay(150);
                         await relaunch();
                         break;
